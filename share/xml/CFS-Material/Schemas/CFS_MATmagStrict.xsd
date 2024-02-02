@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://www.cfs++.org/material"
+  xmlns="http://www.cfs++.org/material"
+  elementFormDefault="qualified">
+
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">
+      Coupled Field Solver project CFS++
+      Schema for material description of magnetostrictive material
+    </xsd:documentation>
+  </xsd:annotation>
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of material for piezo PDEs -->
+  <!-- ******************************************************************* -->
+
+  <xsd:complexType name="DT_MatMagStrict">
+    <xsd:sequence>
+	    <xsd:element name="magnetoStrictionTensor_h" type="DT_TensorGeneralType"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+</xsd:schema>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://www.cfs++.org/material"
+  xmlns="http://www.cfs++.org/material"
+  elementFormDefault="qualified">
+
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">
+      Coupled Field Solver project CFS++
+      Schema for material description of an electric material
+    </xsd:documentation>
+  </xsd:annotation>
+
+  <xsd:include schemaLocation="CFS_MAThysteresis.xsd"/>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of material for electrostatic PDEs -->
+  <!-- ******************************************************************* -->
+
+  <xsd:complexType name="DT_MatElectric">
+    <xsd:sequence>
+      <xsd:element name="permittivity" type="DT_ElecPermittivity"/>
+      <xsd:element name="hystModel" type="DT_HystModelElec" minOccurs="0"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of electric permittivity -->
+  <!-- ******************************************************************* -->
+  <xsd:complexType name="DT_ElecPermittivity">
+    <xsd:sequence>
+       <xsd:element name="linear" type="DT_Square3TensorType" minOccurs="0"/>
+       <xsd:element name="nonlinear" type="DT_ElecPermittivityNonLin" minOccurs="0"/>
+       <xsd:element name="model" type="DT_ElecPermittivityHyst" minOccurs="0"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:complexType name="DT_ElecPermittivityNonLin">
+    <xsd:choice>
+      <xsd:element name="isotropic" type="DT_MatNonLinearity"/>
+    </xsd:choice>
+  </xsd:complexType>
+  
+  <xsd:complexType name="DT_ElecPermittivityHyst">
+    <xsd:all>
+      <xsd:element name="isotropic" minOccurs="1">
+        <xsd:complexType>
+          <xsd:choice>
+            <xsd:element name="JilesAthertonModel" type="DT_JilesAthertonModel"/>
+          </xsd:choice>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:all>
+  </xsd:complexType>
+  
+</xsd:schema>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			targetNamespace="http://www.cfs++.org/material"
+			xmlns="http://www.cfs++.org/material"
+			elementFormDefault="qualified">
+	
+	<xsd:annotation>
+		<xsd:documentation xml:lang="en">
+			Coupled Field Solver project CFS++
+			Schema for material description of an pyroelectric material
+		</xsd:documentation>
+  </xsd:annotation>
+
+  
+  
+  <!-- ******************************************************************* -->
+  <!--   Definition of material for pyroelectric PDEs -->
+  <!-- ******************************************************************* -->
+  
+  <xsd:complexType name="DT_MatPyroelectric">
+	  <xsd:sequence>
+		  <xsd:element name="pyroCoefficient" type="DT_PyroCoefficient"/>
+	  </xsd:sequence>
+  </xsd:complexType>
+  
+  
+  
+  <!-- ******************************************************************* -->
+  <!--   Definition of the Pyrocoefficient -->
+  <!-- ******************************************************************* -->
+  <xsd:complexType name="DT_PyroCoefficient">
+    <xsd:sequence>
+      <xsd:element name="linear">
+        <xsd:complexType>
+          <xsd:choice>
+      	    <xsd:element name="tensor" type="DT_Square3TensorTypeGeneral"/>
+      	  </xsd:choice>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+</xsd:schema>

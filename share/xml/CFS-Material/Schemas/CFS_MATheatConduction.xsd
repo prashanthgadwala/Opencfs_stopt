@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://www.cfs++.org/material"
+  xmlns="http://www.cfs++.org/material"
+  elementFormDefault="qualified">
+
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">
+      Coupled Field Solver project CFS++
+      Schema for material description of an heat conduction material
+    </xsd:documentation>
+  </xsd:annotation>
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of material for heat conduction PDEs -->
+  <!--   some hack: currently heat conductivity and capacity treated -->
+  <!--   with same definition -->
+  <!-- ******************************************************************* -->
+
+    <xsd:complexType name="DT_MatHeatConduction">
+    <xsd:sequence>
+      <xsd:element name="density" type="DT_HeatScalar"/>
+      <!-- unit for heat capacity is J/(kg*K), some sources give J/(g*K), take care! -->
+      <xsd:element name="heatCapacity" type="DT_HeatCapacity"/>
+      <xsd:element name="heatConductivity" type="DT_HeatConductivity"/>
+      <xsd:element name="refTemperature" minOccurs="0" type="DT_HeatScalarLinear">       
+      </xsd:element>         
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:complexType name="DT_HeatScalarLinear">
+    <xsd:sequence>
+      <xsd:element name="linear" type="DT_ScalarType" minOccurs="0"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of mass density-->
+  <!-- ******************************************************************* -->
+  <xsd:complexType name="DT_HeatScalar">
+    <xsd:sequence>
+      <xsd:element name="linear" type="DT_ScalarType"/>
+      <xsd:element name="nonlinear" type="DT_MatNonLinearity" minOccurs="0"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  
+  <!-- ******************************************************************* -->
+  <!--   Definition of heat conductivity-->
+  <!-- ******************************************************************* -->
+  <xsd:complexType name="DT_HeatConductivity">
+    <xsd:sequence>
+      <xsd:element name="linear" type="DT_Square3TensorType"/>
+      <xsd:element name="nonlinear" type="DT_HeatNonLin" minOccurs="0"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of heat capacity-->
+  <!-- unit for heat capacity is J/(kg*K), some sources give J/(g*K), take care! -->  
+  <!-- ******************************************************************* -->
+  <xsd:complexType name="DT_HeatCapacity">
+    <xsd:sequence>
+      <xsd:element name="linear" type="DT_ScalarType"/>
+      <xsd:element name="nonlinear" type="DT_MatNonLinearity" minOccurs="0"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of non linear heat conductivity-->
+  <!-- ******************************************************************* -->
+  <xsd:complexType name="DT_HeatNonLin">
+    <xsd:sequence>
+      <xsd:element name="isotropic" type="DT_MatNonLinearity"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+</xsd:schema>

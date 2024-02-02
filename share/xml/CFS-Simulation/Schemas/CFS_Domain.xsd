@@ -1,0 +1,792 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://www.cfs++.org/simulation"
+  xmlns="http://www.cfs++.org/simulation"
+  xmlns:cfs="http://www.cfs++.org/simulation"
+  elementFormDefault="qualified">
+
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">
+      Coupled Field Solver project CFS++
+      Schema description for domain section of parameter file
+    </xsd:documentation>
+  </xsd:annotation>
+
+
+  <!-- ******************************************************************** -->
+  <!-- Data type for general geometry specification -->
+  <!-- ******************************************************************** -->
+  <xsd:complexType name="DT_Geometry">
+    <xsd:complexContent>
+      <xsd:restriction base="xsd:anyType">
+        <xsd:attribute name="type" use="optional" default="3d">
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:token">
+              <xsd:enumeration value="plane"/>
+              <xsd:enumeration value="axi"/>
+              <xsd:enumeration value="3d"/>
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+      </xsd:restriction>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- ******************************************************************** -->
+  <!-- Data type for specification of a region in the mesh file -->
+  <!-- ******************************************************************** -->
+  <xsd:complexType name="DT_DomainRegion">
+    <xsd:sequence>
+      <xsd:element name="matRotation" minOccurs="0" maxOccurs="1">
+        <xsd:complexType>
+          <xsd:attribute name="alpha" type="xsd:token" use="optional"
+            default="0.0"/>
+          <xsd:attribute name="beta" type="xsd:token" use="optional"
+            default="0.0"/>
+          <xsd:attribute name="gamma" type="xsd:token" use="optional"
+            default="0.0"/>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="name" type="xsd:token" use="required"/>
+    <!-- the material references to the material data file -->
+    <xsd:attribute name="material" type="xsd:token" use="optional" default=""/>
+    <xsd:attribute name="composite" type="xsd:token" use="optional" default=""/>
+    <xsd:attribute name="coordSysId" type="xsd:token" use="optional" default=""/>
+    <!-- a xml file in density.xml format that specifies region elements by a threshold -->
+    <xsd:attribute name="pattern" type="xsd:token" use="optional"  />
+  </xsd:complexType>
+
+
+  <!-- ******************************************************************** -->
+  <!-- Data type for specification of a surface region in the mesh -->
+  <!-- ******************************************************************** -->
+  <xsd:complexType name="DT_DomainSurface">
+    <xsd:attribute name="name" type="xsd:token" use="required"/>
+    <xsd:attribute name="makeNamedNodes" type="DT_CFSBool" use="optional"
+      default="no">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+          Creates name nodes from a surface. The name of the nodes will have the
+          prefix "nodes_" and may then be used by boundary conditions or
+          coupling interface.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="excludeSurface" type="xsd:token" use="optional"
+      default="">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+          Exlude nodes which are in found in a second surface. This can be used
+          to exlude corner nodes of the line.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <!-- Data type for specification of the motion of an NcInterface -->
+  <xsd:complexType name="DT_NciMotion">
+    <xsd:attribute name="coordSysId" type="xsd:token" use="optional"
+                   default="default"/>
+    <xsd:attribute name="eulerianSystem" type="DT_CFSBool" use="optional"
+                   default="no"/>                   
+    <xsd:attribute name="movingSide" use="optional" default="slave">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:normalizedString">
+          <xsd:enumeration value="master"/>
+          <xsd:enumeration value="slave"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <!-- ******************************************************************** >
+    Data types for specifying the parameters for automatically generating an 
+    external layer that can be used as a PML region
+  < ******************************************************************** -->
+  <xsd:complexType name="DT_LayerGeneration">
+    <xsd:annotation>
+      <xsd:documentation>
+        Define the parameters for automatic layer generation via mesh extrusion.
+        The elements of the layer are prismatic (wedge for inner tet-mesh and hex for inner hex mesh).
+        Attributes:
+        - name:                 (required) specifies the name of the newly created region
+        Child elements:
+        - sourceSurfRegion:     (required) specifies the surface where the layer will be built onto; 
+                                           should be the the outer boundary of the propagation domain or a part of it;
+        - extrusionParameters:  (required) specifies the height of the generated elements in m and the number of extrusions
+        - surfGeometry:         (required) specify a geometry type or input file or CGAL surface approximation parameters
+        - outputFile:           (optional) allows to specify a path to a file where the computed geometry should be
+                                           stored in.
+    </xsd:documentation>
+    </xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="sourceSurfRegion" type="DT_LayerSurface" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="extrusionParameters" type="DT_LayerExtrusionParams" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="surfGeometry" type="DT_LayerSurfGeometry" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="outputFile" type="DT_LayerOutputFile" minOccurs="0" maxOccurs="1"/>
+    </xsd:sequence>
+    <xsd:attribute name="name" type="xsd:token" use="required"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="DT_LayerSurface">
+    <xsd:annotation>
+        <xsd:documentation>
+          Specify a surface name
+        </xsd:documentation>
+    </xsd:annotation>
+    <xsd:attribute name="name" type="xsd:token" use="required"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="DT_LayerExtrusionParams">
+    <xsd:annotation>
+        <xsd:documentation>
+          Required parameters to specify the created layer
+          - elemHeight: (required) defines the height of every created polyhedron (in normal direction).
+                                   The sign of elemHeight controls the direction into which the layer is created.
+                                   On curved boundaries, '+' should extrude the elements outwards
+          - numLayers:  (required) is the number of extrusion steps and must be a positive integer;
+        </xsd:documentation>
+    </xsd:annotation>
+    <xsd:attribute name="elemHeight" type="xsd:float" use="required"/>
+    <xsd:attribute name="numLayers" type="xsd:positiveInteger" use="required"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="DT_LayerSurfGeometry">
+    <xsd:annotation>
+        <xsd:documentation>
+          Specify if the geometry is approximated using additional information (e.g., specifying a sphere), use an input file,
+          or use CGAL (GPL-Licenced Dependency) to approximate an arbitrary convex shape.
+          - analyticApproximation:  (choice, required) allows to specify if the surface has a specific simple geometry type.
+                                                       With this additional information, CFS does not need to approximate the geometry, 
+                                                       but can directly reproduce all the information from the node coordinates.
+          - cgalApproximation:      (choice, required) approximation via CGAL
+          - fromInputFile:          (choice, required) allows to specify a path to a file containing the nodal geometry. 
+                                                       If given, CFS does not compute nodal geometry on its own but reads from
+                                                       the file.
+        </xsd:documentation>
+    </xsd:annotation>
+    <xsd:choice>
+      <xsd:element name="cgalApproximation" type="DT_CgalApproximationParams" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="analyticApproximation" type="DT_GeometryInfo" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="fromInputFile" type="DT_LayerInputFile" minOccurs="1" maxOccurs="1"/>
+    </xsd:choice>
+  </xsd:complexType>
+
+  <xsd:complexType name="DT_GeometryInfo">
+    <xsd:annotation>
+      <xsd:documentation>
+        Data type for specifying a simple geometry (helper data type for automatic layer generation)
+        Specifies a geometry type to ease the determination of the underlying nodal 
+        surface geometry for the automatic layer generation and the curvilinear PML
+        - sphere:   the surface is spherical
+        - cylinder: the surface is cylindric
+        - plane:    the surface is planar
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:choice>
+      <xsd:element name="plane" type="DT_GeometryPlane" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="cylinder" type="DT_GeometryCylinder" minOccurs="1" maxOccurs="1"/>
+      <xsd:element name="sphere" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+    </xsd:choice>
+  </xsd:complexType>
+
+  <xsd:complexType name="DT_GeometryPlane">
+    <xsd:annotation>
+      <xsd:documentation>
+        Type to specify that the surface geometry is planar and has a normal into the x, y or z direction
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:attribute name="normalDirection" type="DT_CartesianAxis" use="required"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="DT_GeometryCylinder">
+    <xsd:annotation>
+      <xsd:documentation>
+        Type to specify that the surface geometry is cylindric and either x, y or z is its height axis
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:attribute name="axisDirection" type="DT_CartesianAxis" use="required"/>
+  </xsd:complexType>
+
+  <xsd:simpleType name="DT_CartesianAxis">
+    <xsd:annotation>
+      <xsd:documentation>
+        A restricted token to allow only x, y, or z as output
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="x"/>
+      <xsd:enumeration value="y"/>
+      <xsd:enumeration value="z"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:complexType name="DT_CgalApproximationParams">
+    <xsd:annotation>
+      <xsd:documentation>
+        - degreePolyFit:     (optional) allows to use a custom degree for the polynomial fitted by cgal
+        - degreeMongeCoeff:  (optional) allows to specify a custom degree for the monge coefficients computed by cgal
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:attribute name="degreePolyFit" type="xsd:positiveInteger" default="2" use="optional"/>
+    <xsd:attribute name="degreeMongeCoeff" type="xsd:positiveInteger" default="2" use="optional"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="DT_LayerOutputFile">
+    <xsd:annotation>
+      <xsd:documentation>
+        Specify writing the geometry to a file.
+        Can be used to avoid re-computing the geometry for every simulation call. 
+        A workflow would be: call layer generation once for a mesh and specify a file path in 'output' to write out the 
+        geometry file. Then use this file as the 'input' for the subsequent simulations.
+        - name:               (required) allows to specify a path to a file where the computed geometry should be
+                                          stored in.
+        - delimiter:          (optional) specifies the delimiting character in the read/write files
+        - commentCharacter:   (optional) specifies the comment character in the read/write files
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:attribute name="name" type="xsd:token" use="required"/>
+    <xsd:attribute name="delimiter" default="," type="xsd:token" use="optional"/>
+    <xsd:attribute name="commentCharacter" default="#" type="xsd:token" use="optional"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="DT_LayerInputFile">
+    <xsd:annotation>
+      <xsd:documentation>
+        Specify reading the geometry from a file instead of computing it.
+        Can be used to avoid re-computing the geometry for every simulation call. 
+        A workflow would be: call layer generation once for a mesh and specify a file path in 'output' to write out the 
+        geometry file. Then use this file as the 'input' for the subsequent simulations.
+        stored in.
+        - name:              (required) allows to specify a path to a file containing the nodal geometry. 
+        - delimiter:         (optional) specifies the delimiting character in the read/write files
+        - commentCharacter:  (optional) specifies the comment character in the read/write files
+        - nodeNumberCol:     (optional) column of the corresponding node number
+        - xComp_nVecCol:     (optional) column of the x components of normal vectors
+        - yComp_nVecCol:     (optional) column of the y components of normal vectors
+        - zComp_nVecCol:     (optional) column of the z components of normal vectors
+        - xComp_tMinVecCol:  (optional) column of the x components of min principal vectors
+        - yComp_tMinVecCol:  (optional) column of the y components of min principal vectors
+        - zComp_tMinVecCol:  (optional) column of the z components of min principal vectors
+        - xComp_tMaxVecCol:  (optional) column of the x components of max principal vectors
+        - yComp_tMaxVecCol:  (optional) column of the y components of max principal vectors
+        - zComp_tMaxVecCol:  (optional) column of the z components of max principal vectors
+        - minCurvCol:        (optional) column for scalar values min curvatures
+        - maxCurvCol:        (optional) column for scalar values max curvatures
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:attribute name="name" type="xsd:token" use="required"/>
+    <xsd:attribute name="delimiter" default="," type="xsd:token" use="optional"/>
+    <xsd:attribute name="commentCharacter" default="#" type="xsd:token" use="optional"/>
+    <xsd:attribute name="nodeNumberCol" default="1" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="xComp_nVecCol" default="2" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="yComp_nVecCol" default="3" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="zComp_nVecCol" default="4" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="xComp_tMinVecCol" default="5" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="yComp_tMinVecCol" default="6" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="zComp_tMinVecCol" default="7" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="xComp_tMaxVecCol" default="8" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="yComp_tMaxVecCol" default="9" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="zComp_tMaxVecCol" default="10" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="minCurvCol" default="11" type="xsd:positiveInteger" use="optional"/>
+    <xsd:attribute name="maxCurvCol" default="12" type="xsd:positiveInteger" use="optional"/>
+  </xsd:complexType>
+
+  <!-- ********************************************************************
+    Data type for specification of a non-conforming interface
+    ********************************************************************
+    This defines only the geometrical part of the interface.
+    Formulation specific options (e.g. Mortar/Nitsche) are defined in
+    CFS_PDEbasic.xsd (DT_NcInterfaceList). -->
+  <xsd:complexType name="DT_DomainNCIface">
+    <xsd:choice minOccurs="0" maxOccurs="1">
+      <xsd:element name="generalMotion">
+        <xsd:complexType>
+          <xsd:complexContent>
+            <xsd:extension base="DT_NciMotion">
+              <xsd:attribute name="displace1" type="xsd:token" use="required"/>
+              <xsd:attribute name="displace2" type="xsd:token" use="required"/>
+              <xsd:attribute name="displace3" type="xsd:token" use="optional"/>
+            </xsd:extension>
+          </xsd:complexContent>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="rotation">
+        <xsd:complexType>
+          <xsd:complexContent>
+            <xsd:extension base="DT_NciMotion">
+              <xsd:attribute name="rpm" type="xsd:double" use="required"/>
+              <xsd:attribute name="connectedRegions" type="xsd:token" use="optional"/>
+            </xsd:extension>
+          </xsd:complexContent>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:choice>
+    <xsd:attribute name="name" type="xsd:token" use="required">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+          Name of nonmatching interface. Is used to reference interface from
+          ncInterfaceLists of PDEs.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="masterSide" type="xsd:token" use="required">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+          The master side of the nonmatching interface is given by either a
+          reference to an arbitrary surface or a volume region which is planar
+          along the common interface with the slave region. The elements on
+          this side are assumed to be smaller than the ones on the slave side.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>   
+    <xsd:attribute name="useMeshSmoothing" type="DT_CFSBool" use="optional" default="no">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+	    This option is only reasonable if iterative coupling and a geometry update
+	    is activated. This option will cause the interface to be updated according
+	    to the mesh update calculated in the iterative coupling.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="slaveSide" type="xsd:token" use="required">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+          The slave side of the nonmatching interface is given by either a
+          reference to an arbitrary surface or a volume region which is planar
+          along the common interface with the master region. The surface
+          elements on the slave side of the nonmatching interface are also the
+          definition domain of the Lagrange Multiplier. In the case of curved
+          interfaces the elements of the master side will be projected onto
+          the elements of the slave side before the intersection calculation
+          takes place.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="intersectionMethod" use="optional">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:normalizedString">
+          <xsd:enumeration value="coaxi"/>
+          <xsd:enumeration value="polygon"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+    <xsd:attribute name="forceXValue" type="xsd:token" use="optional" default="">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+        Usefull for a coplanar interfaces. It sets the x-coordinate of all 
+        nodes on the interface to the given value. Use if your preprocessor 
+        may have a low precission.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="forceYValue" type="xsd:token" use="optional" default="">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+        Usefull for a coplanar interfaces. It sets the y-coordinate of all 
+        nodes on the interface to the given value. Use if your preprocessor 
+        may have a low precission.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="forceZValue" type="xsd:token" use="optional" default="">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+        Usefull for a coplanar interfaces. It sets the z-coordinate of all 
+        nodes on the interface to the given value. Use if your preprocessor 
+        may have a low precission.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="tolAbs" type="DT_NonNegFloat"
+                   use="optional" default="1e-12"/>
+    <xsd:attribute name="tolRel" type="DT_FloatUnitInterval"
+                   use="optional" default="1e-4" />
+    <xsd:attribute name="gridProjection" use="optional" default="naive">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:normalizedString">
+          <xsd:enumeration value="naive"/>
+          <xsd:enumeration value="gander-japhet"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+    <xsd:attribute name="geometryWarnings" type="DT_CFSBool"
+                   use="optional" default="yes" />
+    <xsd:attribute name="writeGraphvizFiles" type="DT_CFSBool"
+                   use="optional" default="no" />
+    <xsd:attribute name="storeIntegrationGrid" type="DT_CFSBool"
+                   use="optional" default="yes">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+          This attribute controls if the integration grid of the interface
+          (which is the collection of all pairwise intersections of master and
+          slave elements) is stored as a surfRegion in the grid, so it can be
+          visualized.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="mutualProjection" type="DT_CFSBool" use="optional" default="no">
+      <xsd:annotation>
+        <xsd:documentation xml:lang="en">
+          Used for creating an intersection grid handling periodic boundary conditions.
+          In this case, the master and the slave surfaces don't lie on the same interface. Therefore,
+          there will be no intersection grid found unless they are projected on a common interface.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+  </xsd:complexType>
+
+  <!-- ******************************************************************** -->
+  <!-- Data type for specifying of a set of special nodes in the mesh file -->
+  <!-- ******************************************************************** -->
+  <xsd:complexType name="DT_DomainNodes">
+    <xsd:complexContent>
+      <xsd:extension base="DT_DomainEntSelect">
+        <xsd:attribute name="name" type="xsd:token" use="required"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+
+  <!-- ******************************************************************** -->
+  <!-- Data type for specifying of a set of special elements in mesh file -->
+  <!-- ******************************************************************** -->
+  <xsd:complexType name="DT_DomainElems">
+    <xsd:complexContent>
+      <xsd:extension base="DT_DomainEntSelect">
+        <xsd:attribute name="name" type="xsd:token" use="required"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+  
+
+  <!-- ******************************************************************** -->
+  <!-- Data type for specifying either a single entity or a list of   -->
+  <!-- entitiies (nodes, elements), which can either be selected by a -->
+  <!-- pair of coordinates or by a parametric description -->
+  <!--  ********************************************************************  -->
+  <xsd:complexType name="DT_DomainEntSelect">
+    <xsd:choice minOccurs="0" maxOccurs="1">
+      <xsd:element name="allNodesInRegion">
+        <xsd:complexType>
+          <xsd:attribute name="regName" type="xsd:token" use="required"/>
+        </xsd:complexType>
+      </xsd:element>
+      <!-- pair of coordinates -->
+      <xsd:element name="coord">
+        <xsd:complexType>
+          <xsd:attribute name="x" type="xsd:token" use="optional"/>
+          <xsd:attribute name="y" type="xsd:token" use="optional"/>
+          <xsd:attribute name="z" type="xsd:token" use="optional"/>
+          <xsd:attribute name="r" type="xsd:token" use="optional"/>
+          <xsd:attribute name="phi" type="xsd:token" use="optional"/>
+          <xsd:attribute name="coordSysId" type="xsd:token"
+            use="optional"  default="default"/>
+        </xsd:complexType>
+      </xsd:element>
+      <!-- parametric description of coordinates -->
+      <xsd:element name="list">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="freeCoord" minOccurs="0" maxOccurs="3">
+              <xsd:complexType>
+                <xsd:attribute name="comp" type="DT_CosyCompType" use="required"/>
+                <xsd:attribute name="start" type="xsd:token" use="required"/>
+                <xsd:attribute name="stop" type="xsd:token" use="required"/>
+                <xsd:attribute name="inc" type="xsd:token" use="required"/>
+              </xsd:complexType>
+            </xsd:element>
+            <xsd:sequence>
+              <xsd:element name="fixedCoord" minOccurs="0"
+                maxOccurs="2">
+                <xsd:complexType>
+                  <xsd:attribute name="comp" type="DT_CosyCompType" use="required"/>
+                  <xsd:attribute name="value" type="xsd:token" use="required"/>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:sequence>
+          <xsd:attribute name="coordSysId" type="xsd:token" default="default"/>
+          <xsd:attribute name="gridId" type="xsd:token" default="default"></xsd:attribute>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:choice>
+  </xsd:complexType>
+
+
+  <!-- ******************************************************************** -->
+  <!-- Data type for specifying a composite material, defined by several -->
+  <!-- layers -->
+  <!-- ******************************************************************** -->
+  <xsd:complexType name="DT_DomainComposite">
+    <xsd:sequence>
+      <xsd:sequence>
+        <xsd:element name="lamina" maxOccurs="unbounded">
+          <xsd:complexType>
+            <xsd:attribute name="material" type="xsd:token"
+            use="required"/>
+            <xsd:attribute name="thickness" type="DT_NonNegFloat" use="required"/>
+            <xsd:attribute name="orientation" type="xsd:double"   
+              use="optional" default="0.0"/>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:sequence>
+    <xsd:attribute name="name" type="xsd:token" use="required"/>
+  </xsd:complexType>
+
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of basic CoordSys data type -->
+  <!-- ******************************************************************** -->
+
+  <!-- This is an abstract basic type so that it cannot appear in an -->
+  <!-- instance document -->
+  <xsd:complexType name="DT_CoordSysBasic" abstract="true">
+    <xsd:complexContent>
+      <xsd:restriction base="xsd:anyType">
+        <xsd:attribute name="id" type="xsd:token" use="required"/>
+        </xsd:restriction>
+      </xsd:complexContent>
+  </xsd:complexType>
+
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of basic CoordSys element -->
+  <!-- ******************************************************************** -->
+
+  <!-- This element is abstract in order to force substitution -->
+  <!-- by the derived specialised CoordSys elements -->
+  <xsd:element name="CoordSysBasic" type="DT_CoordSysBasic" abstract="true"/>
+    
+    
+  <!-- ******************************************************************** -->
+  <!--   Definition of element for cylindric coordinate system -->
+  <!-- ******************************************************************** -->
+  <xsd:element name="cylindric" type="DT_CoordSysCylindric"
+    substitutionGroup="CoordSysBasic"/>
+  
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of data type for cylindric coordinate system -->
+  <!-- ******************************************************************** -->
+
+  <xsd:complexType name="DT_CoordSysCylindric">
+    <xsd:complexContent>
+      <xsd:extension base="DT_CoordSysBasic">
+        <xsd:sequence>
+          <xsd:element name="origin" type="DT_PointType"/>
+          <xsd:element name="zAxis" type="DT_PointType"/>
+          <xsd:element name="rAxis" type="DT_PointType"/>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of element for polar coordinate system -->
+  <!-- ******************************************************************** -->
+  <xsd:element name="polar" type="DT_CoordSysPolar"
+    substitutionGroup="CoordSysBasic"/>
+  
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of data type for polar coordinate system -->
+  <!-- ******************************************************************** -->
+
+  <xsd:complexType name="DT_CoordSysPolar">
+    <xsd:complexContent>
+      <xsd:extension base="DT_CoordSysBasic">
+        <xsd:sequence>
+          <xsd:element name="origin" type="DT_PointType2D"/>
+          <xsd:element name="rAxis" type="DT_PointType2D"/>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of element for cartesian coordinate system -->
+  <!-- ******************************************************************** -->
+  <xsd:element name="cartesian" type="DT_CoordSysCartesian"
+    substitutionGroup="CoordSysBasic"/>
+  
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of data type for cartesian coordinate system -->
+  <!-- ******************************************************************** -->
+
+  <xsd:complexType name="DT_CoordSysCartesian">
+    <xsd:complexContent>
+      <xsd:extension base="DT_CoordSysBasic">
+        <xsd:sequence>
+          <xsd:element name="origin" type="DT_PointType"/>
+          <xsd:element name="xAxis" type="DT_PointType"/>
+          <xsd:element name="yAxis" type="DT_PointType"/>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of element for cartesian coordinate system -->
+  <!-- ******************************************************************** -->
+  <xsd:element name="trivialCartesian" type="DT_CoordSysTrivialCartesian"
+    substitutionGroup="CoordSysBasic"/>
+  
+
+  <!-- ******************************************************************** -->
+  <!--   Definition of data type for cartesian coordinate system -->
+  <!-- ******************************************************************** -->
+
+  <xsd:complexType name="DT_CoordSysTrivialCartesian">
+    <xsd:complexContent>
+      <xsd:extension base="DT_CoordSysBasic">
+        <xsd:sequence>
+          <xsd:element name="origin" type="DT_PointType"/>
+          <xsd:element name="axisMap">
+	    <xsd:complexType>
+              <xsd:attribute name="x" type="xsd:token" use="required"/>
+              <xsd:attribute name="y" type="xsd:token" use="required"/>
+              <xsd:attribute name="z" type="xsd:token" use="required"/>
+	    </xsd:complexType>
+	  </xsd:element>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- ******************************************************************** -->
+  <!--   Data type for domain section -->
+  <!-- ******************************************************************** -->
+  <xsd:complexType name="DT_Domain">
+    <xsd:sequence>
+      <!-- Variable list -->
+      <xsd:element name="variableList" minOccurs="0" maxOccurs="1">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="var" minOccurs="0" maxOccurs="unbounded">
+              <xsd:complexType>
+                <xsd:attribute name="name" type="xsd:token" use="required"/>
+                <xsd:attribute name="value" type="xsd:token" use="required"/>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Region list -->
+      <xsd:element name="regionList" minOccurs="0" maxOccurs="1">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="region" type="DT_DomainRegion" minOccurs="1" 
+              maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Surface region list -->
+      <xsd:element name="surfRegionList" minOccurs="0" maxOccurs="1">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="surfRegion" type="DT_DomainSurface"
+            minOccurs="0" maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <!-- AutoLayerGenerationList. Tells CFS to automatically generate an
+      external layer that is used for the curvilinear PML. -->
+      <xsd:element name="layerGenerationList" minOccurs="0" maxOccurs="1">
+        <xsd:annotation>
+          <xsd:documentation>
+            Tells CFS to automatically generate an external layer that is used 
+            for the curvilinear PML. The list specifies all layers (regions)
+            that are to be generated.
+          </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="newRegion" type="DT_LayerGeneration" minOccurs="0" maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Non-conforming interface region list -->
+      <xsd:element name="ncInterfaceList" minOccurs="0" maxOccurs="1">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">
+            Non-conforming interface region list.
+          </xsd:documentation>
+        </xsd:annotation>              
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="ncInterface" type="DT_DomainNCIface"
+              minOccurs="0" maxOccurs="unbounded">
+              <xsd:annotation>
+                <xsd:documentation xml:lang="en">
+                  A non-conforming interface is defined by references to two
+                  neighboring surface or co-planar volumes regions.
+                </xsd:documentation>
+              </xsd:annotation>              
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <!-- Named elems list -->
+      <xsd:element name="elemList" minOccurs="0" maxOccurs="1">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="elems" type="DT_DomainElems" minOccurs="0"
+              maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Named nodes list -->
+      <xsd:element name="nodeList" minOccurs="0" maxOccurs="1">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="nodes" type="DT_DomainNodes" minOccurs="0"
+              maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Composite material list -->
+      <xsd:element name="composite" type="DT_DomainComposite" minOccurs="0"
+        maxOccurs="unbounded"/>
+
+      <!-- Coordinate system list -->
+      <xsd:element name="coordSysList" minOccurs="0" maxOccurs="unbounded">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element ref="CoordSysBasic" minOccurs="1"
+              maxOccurs="unbounded"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence> 
+
+    <!-- Type of geometry used for the domain -->
+    <xsd:attribute name="geometryType" use="required">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:token">
+          <xsd:enumeration value="plane"/>
+          <xsd:enumeration value="axi"/>
+          <xsd:enumeration value="3d"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+    <!-- Flag for printing grid information -->
+    <xsd:attribute name="printGridInfo" type="DT_CFSBool" use="optional" 
+      default="no"/>
+    <xsd:attribute name="depth2dPlane" type="DT_NonNegFloat" use="optional" default="1.0"/>   
+  </xsd:complexType>
+
+ 
+ 
+</xsd:schema>

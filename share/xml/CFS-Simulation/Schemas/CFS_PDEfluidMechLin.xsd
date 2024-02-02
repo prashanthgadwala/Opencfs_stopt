@@ -1,0 +1,650 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://www.cfs++.org/simulation"
+  xmlns="http://www.cfs++.org/simulation"
+  xmlns:cfs="http://www.cfs++.org/simulation"
+  elementFormDefault="qualified">
+
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">
+      Coupled Field Solver project CFS++
+      Schema for PDE description for a linearized fluid mechanics PDE
+    </xsd:documentation>
+  </xsd:annotation>
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of element for mechanic PDEs -->
+  <!-- ******************************************************************* -->
+  <xsd:element name="fluidMechLin" type="DT_PDEFluidMechLin" substitutionGroup="PDEBasic">
+    <xsd:annotation>
+      <xsd:documentation>Solves the incompressible Navier-Stokes equations in a nonlinear case (takes the convective term into account) or as a perturbation ansatz (resulting in linear equations); primary dofs are velocity and pressure</xsd:documentation>
+    </xsd:annotation>
+    <xsd:unique name="CS_FluidMechanicLinRegion">
+      <xsd:selector xpath="cfs:region"/>
+      <xsd:field xpath="@name"/>
+    </xsd:unique>
+  </xsd:element>
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of data type for fluid mechanical PDEs -->
+  <!-- ******************************************************************* -->
+
+  <xsd:complexType name="DT_PDEFluidMechLin">
+    <xsd:complexContent>
+      <xsd:extension base="DT_PDEBasic">
+
+        <xsd:sequence>
+          <!-- Regions the PDE lives on -->
+          <xsd:element name="regionList" minOccurs="1" maxOccurs="1">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="region" minOccurs="1" maxOccurs="unbounded">
+                  <xsd:complexType>
+                    <xsd:attribute name="name" type="xsd:token" use="required"/>                    
+                    <xsd:attribute name="nonLinIds" type="xsd:token" use="optional" default=""/>
+                    <xsd:attribute name="flowId" type="xsd:token" use="optional" default=""/>
+                    <xsd:attribute name="movingMeshId" type="xsd:token" use="optional" default=""/>
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+
+          <!-- (surface) region list for pressure surface terms -->
+          <xsd:element name="presSurfaceList" minOccurs="0" maxOccurs="1">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="presSurf" minOccurs="1" maxOccurs="unbounded">
+                  <xsd:complexType>
+                    <xsd:attribute name="name" type="xsd:token" use="required"/>                    
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+
+          <!-- List defining nonlinear types -->
+          <!--xsd:element name="nonLinList" minOccurs="0" maxOccurs="1">
+            <xsd:annotation>
+              <xsd:documentation>Sets the PDE to a nonlinear one; fully incompr. Navier Stokes euqations </xsd:documentation>
+            </xsd:annotation>
+            <xsd:complexType>
+              <xsd:choice maxOccurs="unbounded">
+                <xsd:element name="convective" type="DT_FluidMechNonLinConv"/>
+              </xsd:choice>
+            </xsd:complexType>
+          </xsd:element-->
+
+          <!-- List defining flows -->
+          <xsd:element name="flowList" minOccurs="0" maxOccurs="1">
+            <xsd:annotation>
+              <xsd:documentation>Defines the basic (background) flow in a perturbation ansatz</xsd:documentation>
+            </xsd:annotation>
+            <xsd:complexType>
+              <xsd:choice maxOccurs="unbounded">
+                <xsd:element name="velocity" type="DT_BcInhomVector"/>
+              </xsd:choice>
+            </xsd:complexType>
+          </xsd:element>
+
+          <!-- List defining moving grids -->
+          <xsd:element name="movingMeshList" minOccurs="0" maxOccurs="1">
+            <xsd:annotation>
+              <xsd:documentation>Defines the grid velocity for the ALE-formulation</xsd:documentation>
+            </xsd:annotation>
+            <xsd:complexType>
+              <xsd:choice maxOccurs="unbounded">
+                <xsd:element name="movingMesh" type="DT_BcInhomVector"/>
+              </xsd:choice>
+            </xsd:complexType>
+          </xsd:element>
+
+          <!-- Initial conditions (optional) -->
+          <xsd:element name="initialValues" minOccurs="0" maxOccurs="1">
+            <xsd:complexType>
+              <xsd:choice maxOccurs="unbounded">
+
+                <!-- Initial state of previous sequence step / external file -->
+                <xsd:element name="initialState" type="DT_InitialState" minOccurs="0" maxOccurs="1"/>
+
+              </xsd:choice>
+            </xsd:complexType>
+          </xsd:element>
+
+          <!-- Boundary Conditions & Loads (optional) -->
+          <xsd:element name="bcsAndLoads" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                <!-- Dirichlet Boundary Conditions -->
+                <xsd:element name="noPressure" type="DT_BcHomScalar">
+                  <xsd:annotation>
+                    <xsd:documentation>Sets pressure to zero</xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="noSlip" type="DT_BcHomVector">
+                  <xsd:annotation>
+                    <xsd:documentation>Sets all components of velocity to zero</xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="pressure" type="DT_BcInhomScalar">
+                  <xsd:annotation>
+                    <xsd:documentation>Prescribes the pressure at the surface</xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="velocity" type="DT_BcInhomVector">
+                  <xsd:annotation>
+                    <xsd:documentation>Prescribes the velocity at the surface</xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="normalSurfaceMass" type="DT_BcInhomScalar">
+                  <xsd:annotation>
+                    <xsd:documentation>
+                      Defines an inertia term acting in normal-direction of the boundary. The scalar value is a mass per surface area. When using a sufficiently high value one can use this BC to enforce zero velocity in normal direction (useful if the boundary is not oriented parallel to the coordinate axes).
+                    </xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="normalImpedance" type="DT_BcInhomScalar">
+                  <xsd:annotation>
+                    <xsd:documentation>
+                      specifies an impedance boundary condition by
+                      ⎛        ⎛                     T⎞   ⎛    2    ⎞            ⎞                       
+                      ⎜-pI + μ ⎝nabla(v) + (nabla(v)) ⎠ + ⎜λ - ─ ⋅ μ⎟ ⋅ I(div(v))⎟ ⋅ n = z  ⋅ (v ⋅ n) ⋅ n
+                      ⎝                                   ⎝    3    ⎠            ⎠        0              
+                      The boundary conditions can also be used to create sound-hard and sound-soft 
+                      boundary conditions depending on the specified impedance ⎛z ⎞value (high and low, respectively).
+                                                                               ⎝ 0⎠
+                    </xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="absorbingBCs" type="DT_AbsorbingBC">
+                  <xsd:annotation>
+                    <xsd:documentation>
+                      absorbing boundary condition applies complex impedance of fluid instead of
+                      specified impedance ⎛z ⎞ at the boundary
+                                          ⎝ 0⎠
+                      
+                      ⎛        ⎛                     T⎞   ⎛    2    ⎞            ⎞                       
+                      ⎜-pI + μ ⎝nabla(v) + (nabla(v)) ⎠ + ⎜λ - ─ ⋅ μ⎟ ⋅ I(div(v))⎟ ⋅ n = z  ⋅ (v ⋅ n) ⋅ n
+                      ⎝                                   ⎝    3    ⎠            ⎠        0              
+                    </xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>
+                <!-- Commented out due to instability, see implementation anntoations in the LinFlow PDE-->
+                <!--<xsd:element name="doNothing" type="DT_AbsorbingBC">
+                  <xsd:annotation>
+                    <xsd:documentation>
+                      The doNothing boundary condition adds the surface integrators stemming from the partial integration to the weak form
+                      
+                      ⎛        ⎛                     T⎞   ⎛    2    ⎞            ⎞                       
+                      ⎜-pI + μ ⎝nabla(v) + (nabla(v)) ⎠ + ⎜λ - ─ ⋅ μ⎟ ⋅ I(div(v))⎟ ⋅ n
+                      ⎝                                   ⎝    3    ⎠            ⎠                
+                    </xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>-->
+                <!-- RHS Load Values-->
+                <xsd:element name="traction" type="DT_BcInhomVector">
+                  <xsd:annotation>
+                    <xsd:documentation>Prescribes the traction vector at the surface</xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element> 
+                <xsd:element name="normalTraction" type="DT_BcInhomScalar">
+                  <xsd:annotation>
+                    <xsd:documentation>Prescribes the traction in normal-direction of the boundary
+                      This is equivalent to an external surface pressure
+                    </xsd:documentation>
+                  </xsd:annotation>
+                </xsd:element>   
+                <xsd:element name="velocityConstraint" >
+                  <xsd:annotation>
+                    <xsd:documentation>Sets the velocity in weak sense with the help of a vectorial Lagrange multiplier</xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:choice>
+                        <!-- Standard no slip BC -->
+                        <xsd:element name="noSlip" minOccurs="0" maxOccurs="1">
+                          <xsd:annotation>
+                            <xsd:documentation>Sets all velocity components to zero</xsd:documentation>
+                        </xsd:annotation>
+                        </xsd:element>
+                        <!-- Apply first order Maxwell slip BC -->
+                        <xsd:element name="MaxwellFirstOrderSlip" minOccurs="0" maxOccurs="1">
+                          <xsd:annotation>
+                            <xsd:documentation>
+                              Applies the first order Maxwell slip BC which is valid for higher Knudsen numbers than the standard noSlip BC. 
+                              The slip velocity is calculated as follows (hollowIncompressibleNormalStress - standard formulation): 
+                              $\bm{v} = \bm{v}_\mathrm{wall} - C \frac{\lambda}{\mu} (\bm{n} \cdot (\bm{\Pi}-diag(\bm{\Pi})) ) \cdot (\bm{I}-\bm{n} \otimes \bm{n})$ 
+                              For the incompressibleNormalStress formulation (NOT STABLE!) the slip velocity is given by:
+                              $\bm{v} = \bm{v}_\mathrm{wall} - C \frac{\lambda}{\mu} (\bm{n} \cdot \bm{\Pi} ) \cdot (\bm{I}-\bm{n} \otimes \bm{n})$ 
+                              As it can be seen, the slip velocity is proportional to the normal derivative of the velocity which gets projected in the tangential plane.
+                              Futhermore, the stress tensor $\Pi$ is scaled with the inverse of the viscosity in order to get the strain, which is scaled with $C$ and $\lambda$.
+                              The factor $C$ is used to model the surface influence - a value of 1.1466 seems to be a good value for air according to experiments in the literature. 
+                              The mean free path $\lambda$ of air molecules under normal circumstances is about 68 nm.
+                              Currently only incompressible variants are implemented, hence, $\bm{Pi} = \mu (\nabla \bm{v} + (\nabla \bm{v})^{\mathrm{T}})$
+                            </xsd:documentation>
+                          </xsd:annotation>
+                          <xsd:complexType>
+                            <xsd:attribute name="meanFreePath" type="xsd:token" use="required"/>
+                            <xsd:attribute name="C1" type="xsd:token" use="required"/>
+                            <xsd:attribute name="formulation" use="optional" default="hollowIncompressibleStress">
+                              <xsd:simpleType>
+                                <xsd:restriction base="xsd:token">
+                                  <xsd:enumeration value="hollowIncompressibleStress"/>
+                                  <xsd:enumeration value="incompressibleStress"/>
+                                  <xsd:enumeration value="compressibleStress"/>
+                                </xsd:restriction>
+                              </xsd:simpleType>
+                            </xsd:attribute>
+                          </xsd:complexType>
+                        </xsd:element>
+                      </xsd:choice>
+                    </xsd:sequence>
+                    <xsd:attribute name="name" type="xsd:token" use="required"/>
+                    <xsd:attribute name="volumeRegion" type="xsd:token" use="required"/>
+                  </xsd:complexType>
+                </xsd:element>   
+                <xsd:element name="scalarVelocityConstraint" >
+                  <xsd:annotation>
+                    <xsd:documentation>Sets the velocity in weak sense with the help of a scalar Lagrange multiplier</xsd:documentation>
+                  </xsd:annotation>
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:choice>
+                        <!-- noPenetration BC -->
+                        <xsd:element name="noPenetration" minOccurs="0" maxOccurs="1">
+                          <xsd:annotation>
+                            <xsd:documentation>Sets the normal velocity component to zero</xsd:documentation>
+                        </xsd:annotation>
+                        </xsd:element>
+                      </xsd:choice>
+                    </xsd:sequence>
+                    <xsd:attribute name="name" type="xsd:token" use="required"/>
+                    <xsd:attribute name="volumeRegion" type="xsd:token" use="required"/>
+                  </xsd:complexType>
+                </xsd:element>             
+              </xsd:choice>
+            </xsd:complexType>
+
+          </xsd:element>
+
+          <!-- Desired solution values (optional) -->
+          <xsd:element name="storeResults" type="DT_FluidMechLinStoreResults" minOccurs="0"
+            maxOccurs="1">
+            <xsd:annotation>
+              <xsd:documentation>Defines results to be stored at nodes, volume and/or surface elememnts or integral vales on regions </xsd:documentation>
+            </xsd:annotation>
+          </xsd:element>
+
+        </xsd:sequence>
+
+        <!-- Subtype of PDE -->
+        <xsd:attribute name="subType" use="optional" default="plane">
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:token">
+              <xsd:enumeration value="plane"/>
+              <xsd:enumeration value="3d"/>
+              <xsd:enumeration value="axi"/>
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+        <xsd:attribute name="type" use="optional" default="lagrange">
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:token">
+              <xsd:enumeration value="lagrange"/>
+              <xsd:enumeration value="legendre"/>
+              <xsd:enumeration value="taylorHood"/>
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>        
+        <xsd:attribute name="formulation" use="optional" default="incompressible">
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:token">
+              <xsd:enumeration value="incompressible"/>
+              <xsd:enumeration value="compressible"/>
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>        
+        <xsd:attribute name="presPolyId" type="xsd:string" use="required"/>
+        <xsd:attribute name="velPolyId" type="xsd:string" use="required"/>
+        <xsd:attribute name="presIntegId" type="xsd:string" use="optional" default="default"/>
+        <xsd:attribute name="velIntegId" type="xsd:string" use="optional" default="default"/>
+        <xsd:attribute name="lagrangeMultPolyId" type="xsd:string" use="optional" fixed="default"/>
+        <xsd:attribute name="lagrangeMultIntegId" type="xsd:string" use="optional" fixed="default"/>
+        <xsd:attribute name="movingMesh" type="DT_CFSBool" default="no"/>
+        <xsd:attribute name="factorC1" type="xsd:double" default="2.0"/>
+        <xsd:attribute name="enableC2" type="xsd:boolean" default="false">
+          <xsd:annotation>
+            <xsd:documentation>Enables the second convective term in the balance of momentum:
+              v' . ( rho0 Grad(v0) . v )
+              Only useful if background flow v0 is inhomogeneous.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="enableC3" type="xsd:boolean" default="false">
+          <xsd:annotation>
+            <xsd:documentation>Enables the third convective term in the balance of momentum:
+              v' . rho0/(gamma p0) v0.Grad(v0) p
+              Only active if formulation=compressible.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="enableGridVelC1" type="xsd:boolean" default="true">
+          <xsd:annotation>
+            <xsd:documentation>Enables the convective term caused by the grid velocity in the balance of mass:
+              \int_{Omega_f} v_g/K \phi \grad{p_a} d\Omega
+              Only active if formulation=compressible.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="enableGridVelC2" type="xsd:boolean" default="true">
+          <xsd:annotation>
+            <xsd:documentation>Enables the convective term caused by the grid velocity in the balance of momentum:
+              \int_{Omega_f} \rho v' (v_g \cdot \grad{v}) d\Omega
+              Only active if formulation=compressible.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of convective nonlinearity -->
+  <!-- ******************************************************************* -->
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of the fluid mechanical unknown types -->
+  <!-- ******************************************************************* -->
+  <xsd:simpleType name="DT_FluidMechLinUnknownType">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="fluidMechVelocity"/>
+      <xsd:enumeration value="meanFluidMechVelocity"/>
+      <xsd:enumeration value="fluidMechPressure"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of enumeration type describing the degrees of freedom  -->
+  <!-- ******************************************************************* -->
+
+  <xsd:simpleType name="DT_FluidMechLinDOF">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="x"/>
+      <xsd:enumeration value="y"/>
+      <xsd:enumeration value="z"/>
+      <xsd:enumeration value="tx"/>
+      <xsd:enumeration value="ty"/>
+      <xsd:enumeration value="tz"/>
+      <xsd:enumeration value="r"/>
+      <xsd:enumeration value="phi"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of the boundary condition types for mechanic -->
+  <!-- ******************************************************************* -->
+
+  <!-- Element type for homogeneous Dirichlet boundary conditions -->
+  <!-- We derive it by extending the base type -->
+  <xsd:complexType name="DT_FluidMechLinHD">
+    <xsd:complexContent>
+      <xsd:extension base="DT_BCBasic">
+        <xsd:attribute name="name" type="xsd:token" use="required"/>
+        <xsd:attribute name="dof" type="DT_FluidMechDOF" use="optional"/>
+        <xsd:attribute name="quantity" default="fluidMechVelocity" type="DT_FluidMechLinUnknownType"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- Element type for inhomogeneous Dirichlet boundary conditions -->
+  <!-- We derive it by extending the homogeneous case -->
+  <xsd:complexType name="DT_FluidMechLinID">
+    <xsd:complexContent>
+      <xsd:extension base="DT_FluidMechLinHD">
+        <xsd:attribute name="value" type="xsd:token" use="required"/>
+        <xsd:attribute name="phase" type="xsd:token" use="optional" default="0.0"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- Element type for inhomogeneous Dirichlet from file -->
+  <!-- boundary conditions. We derive it by extending the homogeneous case -->
+  <xsd:complexType name="DT_FluidMechLinIdFile">
+    <xsd:complexContent>
+      <xsd:extension base="DT_FluidMechLinHD">
+        <xsd:attribute name="inputId" type="xsd:token" default="default"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- Element type for specifying inhomogeneous neumann conditions -->
+  <!-- Identical to that of inhomogeneous Dirichlet case -->
+  <xsd:complexType name="DT_FluidMechLinIN">
+    <xsd:complexContent>
+      <xsd:extension base="DT_FluidMechLinID"/>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- Element type for pressure loads -->
+  <!-- We derive it by extending the base type -->
+  <!--xsd:complexType name="DT_FluidMechPressure">
+    <xsd:complexContent>
+      <xsd:extension base="DT_BCBasic">
+        <xsd:attribute name="name" type="xsd:token" use="required"/>
+        <xsd:attribute name="value" type="xsd:token" use="required"/>
+        <xsd:attribute name="phase" type="xsd:token" use="optional" default="0.0"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType-->
+
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of syntax for specifying output quantities of CFS -->
+  <!-- ******************************************************************* -->
+
+  <!-- Definition of nodal result types of fluid-mechanic PDE -->
+  <xsd:simpleType name="DT_FluidMechLinNodeResult">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="fluidMechVelocity"/>
+      <xsd:enumeration value="meanFluidMechVelocity"/>
+      <xsd:enumeration value="fluidMechMeshVelocity"/>
+      <xsd:enumeration value="fluidMechMeshVelocityNode"/>
+      <xsd:enumeration value="fluidMechPressure"/>
+      <xsd:enumeration value="fluidMechZeroPressure"/>
+      <xsd:enumeration value="lagrangeMultiplier"/>
+      <xsd:enumeration value="lagrangeMultiplier1"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Definition of element result types of fluid-mechanic PDE -->
+  <!--xsd:simpleType name="DT_FluidMechElemResult">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="fluidMechStress"/>
+      <xsd:enumeration value="fluidMechStrainRate"/>
+    </xsd:restriction>
+  </xsd:simpleType-->
+    <!-- Definition of element result types of linearized fluid-mechanic PDE -->
+  <xsd:simpleType name="DT_FluidMechLinElemResult">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="fluidMechStress"/>
+      <xsd:enumeration value="fluidMechStrainRate"/>
+      <xsd:enumeration value="fluidMechCompressibleStress"/>
+      <xsd:enumeration value="fluidMechViscousStress"/>
+      <xsd:enumeration value="fluidMechPressureTensor"/>
+      <xsd:enumeration value="fluidMechTotalStress"/>
+      <xsd:enumeration value="fluidMechTotalVelocityElem"/>
+      <xsd:enumeration value="fluidMechMeshVelocityElem"/>
+      <xsd:enumeration value="fluidMechViscousDissipationDensity"/>
+      <xsd:enumeration value="fluidMechViscousDissipationDensityDivergencePart"/> 
+      <xsd:enumeration value="fluidMechViscousDissipationDensityTotalStrainPart"/> 
+      <xsd:enumeration value="fluidMechIntensity">
+        <xsd:annotation>
+          <xsd:documentation>
+            Intensity I = sigma \cdot conj(v)
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="fluidMechIntensityPressureOnly">
+        <xsd:annotation>
+          <xsd:documentation>
+            Intensity I = p  conj(v)
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Definition of surface element result types of linearized fluid-mechanic PDE -->
+  <xsd:simpleType name="DT_FluidMechLinSurfElemResult">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="fluidMechSurfaceTraction"/> 
+      <xsd:enumeration value="fluidMechSurfaceIntensity">
+        <xsd:annotation>
+          <xsd:documentation>
+            Intensity I = sigma \cdot conj(v) (evaluated at the boundary)
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="fluidMechSurfaceIntensityPressureOnly">
+        <xsd:annotation>
+          <xsd:documentation>
+            Intensity I = p  conj(v) (evaluated at the boundary)
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="fluidMechNormalIntensity">
+        <xsd:annotation>
+          <xsd:documentation>
+            Normal intensity I_n = (\sigma \cdot conj(v)) \cdot n
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="fluidMechNormalIntensityPressureOnly">
+        <xsd:annotation>
+          <xsd:documentation>
+            Normal intensity I_n = (p  conj(v)) \cdot n
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+ 
+  <!-- Definition of region result types of linearized fluid-mechanic PDE -->
+  <xsd:simpleType name="DT_FluidMechLinRegionResult">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="fluidMechViscousDissipation"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Definition of surface region result types of linearized fluid-mechanic PDE -->
+  <xsd:simpleType name="DT_FluidMechLinSurfRegionResult">
+    <xsd:restriction base="xsd:token">
+      <xsd:enumeration value="fluidMechForce"/>
+      <xsd:enumeration value="fluidMechPower">
+        <xsd:annotation>
+          <xsd:documentation>
+            Power P = \int_Gamma (sigma \cdot conj(v)) \cdot n dGamma
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+      <xsd:enumeration value="fluidMechPowerPressureOnly">
+        <xsd:annotation>
+          <xsd:documentation>
+            Power P = \int_Gamma (p  conj(v)) \cdot n dGamma
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:enumeration>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <!-- Definition of field variables -->
+  <!--xsd:simpleType name="DT_FluidMechSensorArrayResult">
+    <xsd:union memberTypes="DT_FluidMechNodeResult DT_FluidMechElemResult"/>
+  </xsd:simpleType-->
+
+  <!-- Global type for specifying desired fluid-mechanic output quantities -->
+  <xsd:complexType name="DT_FluidMechLinStoreResults">
+    <xsd:sequence>
+      <xsd:choice maxOccurs="unbounded">
+
+        <!-- Nodal result definition -->
+        <xsd:element name="nodeResult" minOccurs="0" maxOccurs="unbounded">
+          <xsd:complexType>
+
+            <xsd:complexContent>
+              <xsd:extension base="DT_NodeResult">
+                <xsd:attribute name="type" type="DT_FluidMechLinNodeResult"/>
+              </xsd:extension>
+            </xsd:complexContent>
+          </xsd:complexType>
+        </xsd:element>
+
+        <!-- Element result definition -->
+        <xsd:element name="elemResult" minOccurs="0" maxOccurs="unbounded">
+          <xsd:complexType>
+            <xsd:complexContent>
+              <xsd:extension base="DT_ElemResult">
+                <xsd:attribute name="type" type="DT_FluidMechLinElemResult"/>
+              </xsd:extension>
+            </xsd:complexContent>
+          </xsd:complexType>
+        </xsd:element>
+
+        <!-- Surface element result definition -->
+        <xsd:element name="surfElemResult" minOccurs="0" maxOccurs="unbounded">
+          <xsd:complexType>
+            <xsd:complexContent>
+              <xsd:extension base="DT_SurfElemResult">
+                <xsd:attribute name="type" type="DT_FluidMechLinSurfElemResult" use="required"/>
+              </xsd:extension>
+            </xsd:complexContent>
+          </xsd:complexType>
+        </xsd:element>
+
+        <!-- Region result definition -->
+        <xsd:element name="regionResult" minOccurs="0" maxOccurs="unbounded">
+          <xsd:complexType>
+            <xsd:complexContent>
+              <xsd:extension base="DT_RegionResult">
+                <xsd:attribute name="type" type="DT_FluidMechLinRegionResult"/>
+              </xsd:extension>
+            </xsd:complexContent>
+          </xsd:complexType>
+        </xsd:element>
+
+        <!-- Surface region result definition -->
+        <xsd:element name="surfRegionResult" minOccurs="0" maxOccurs="unbounded">
+          <xsd:complexType>
+            <xsd:complexContent>
+              <xsd:extension base="DT_SurfRegionResult">
+                <xsd:attribute name="type" type="DT_FluidMechLinSurfRegionResult" use="required"/>
+                <xsd:attribute name="dof" type="DT_FluidMechLinDOF"/>
+              </xsd:extension>
+            </xsd:complexContent>
+          </xsd:complexType>
+        </xsd:element>
+
+        <!-- SensorArrayResults -->
+        <xsd:element name="sensorArray" minOccurs="0" maxOccurs="unbounded">
+          <xsd:complexType>
+            <xsd:complexContent>
+              <xsd:extension base="DT_SensorArrayResult">
+                <xsd:attribute name="type" type="DT_FluidMechSensorArrayResult"/>
+              </xsd:extension>
+            </xsd:complexContent>
+          </xsd:complexType>
+        </xsd:element>
+
+      </xsd:choice>
+    </xsd:sequence>
+  </xsd:complexType>
+
+
+</xsd:schema>

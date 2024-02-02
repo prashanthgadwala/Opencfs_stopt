@@ -1,0 +1,636 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://www.cfs++.org/simulation"
+  xmlns="http://www.cfs++.org/simulation"
+  xmlns:cfs="http://www.cfs++.org/simulation"
+  elementFormDefault="qualified">
+
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">
+      Coupled Field Solver project CFS++
+      Schema description for all things related to the type of analysis
+    </xsd:documentation>
+  </xsd:annotation>
+
+  <!-- Data type for specifying type of analysis to be performed -->
+  <xsd:complexType name="DT_Analysis">
+    <xsd:complexContent>
+      <xsd:restriction base="xsd:anyType">
+        <xsd:attribute name="type" use="required">
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:token">
+              <xsd:enumeration value="static"/>
+              <xsd:enumeration value="harmonic"/>
+              <xsd:enumeration value="multiharmonic"/>
+              <xsd:enumeration value="transient"/>
+              <xsd:enumeration value="eigenFrequency"/>
+              <xsd:enumeration value="inverseSource"/>
+              <xsd:enumeration value="buckling"/>
+              <xsd:enumeration value="eigenValue"/>
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+      </xsd:restriction>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of basic Analysis type -->
+  <!-- ******************************************************************* -->
+
+  <!-- This is an abstract basic type so that it cannot appear in an -->
+  <!-- instance document -->
+  <xsd:complexType name="DT_AnalysisBasic" abstract="true"/>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of basic Analysis element -->
+  <!-- ******************************************************************* -->
+
+  <!-- This element is abstract in order to force substitution -->
+  <!-- by the derived specialised analysis elements -->
+
+  <xsd:element name="AnalysisBasic" type="DT_AnalysisBasic" abstract="true"/>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of element Analysis Static -->
+  <!-- ******************************************************************* -->
+  <xsd:element name="static" type="DT_AnalysisStatic" substitutionGroup="AnalysisBasic"> </xsd:element>
+
+  <!-- Data type for static analysis -->
+  <xsd:complexType name="DT_AnalysisStatic">
+    <xsd:complexContent>
+      <xsd:extension base="DT_AnalysisBasic">
+        <xsd:sequence>
+          <xsd:element name="allowPostProc" type="DT_CFSBool" minOccurs="0" maxOccurs="1">
+          <xsd:annotation>
+            <xsd:documentation>Writes the solution of the algebraic system into the DataBase section of the HDF5 output. Needed e.g. for interploating results used as input in subsequent steps.</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of element AnalysisTransient -->
+  <!-- ******************************************************************* -->
+  <xsd:element name="transient" type="DT_AnalysisTransient" substitutionGroup="AnalysisBasic"> </xsd:element>
+
+  <!-- Data type for transient section, i.e. parameters required for
+       performing a transient analysis -->
+  <xsd:complexType name="DT_AnalysisTransient">
+    <xsd:complexContent>
+      <xsd:extension base="DT_AnalysisBasic">
+        <xsd:sequence>
+          <xsd:element name="numSteps" type="xsd:token"/>
+          <xsd:element name="deltaT" type="xsd:token"/>
+          <xsd:element name="writeRestart" type="DT_CFSBool" minOccurs="0" maxOccurs="1"/>
+          <xsd:element name="allowPostProc" type="DT_CFSBool" minOccurs="0" maxOccurs="1">
+          <xsd:annotation>
+            <xsd:documentation>Writes the solution of the algebraic system into the DataBase section of the HDF5 output. Needed e.g. for interploating results used as input in subsequent steps.</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+        </xsd:sequence>
+
+        <xsd:attribute name="initialTime" default="accumulated">
+          <xsd:simpleType>
+            <xsd:annotation>
+              <xsd:documentation>Specify behavior of time step varaible t. Accumulated denots that
+             the time is accumulated over several sequence steps.
+             Zero denotes that each MultiSequence step has its own local time, 
+             starting at 0</xsd:documentation>
+            </xsd:annotation>
+            <xsd:restriction base="xsd:token">
+              <xsd:enumeration value="accumulated"/>
+              <xsd:enumeration value="zero"/>
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of element AnalysisHarmonic -->
+  <!-- ******************************************************************* -->
+  <xsd:element name="harmonic" type="DT_AnalysisHarmonic" substitutionGroup="AnalysisBasic"/>
+
+  <!-- Data type for sampling type, defining optional tree stepping attribute for harmonic analysis -->
+  <xsd:complexType name="DT_sampling">
+    <xsd:simpleContent>
+      <xsd:restriction base="DT_samplingName">
+        <xsd:enumeration value="linear"/>
+        <xsd:enumeration value="log"/>
+        <xsd:enumeration value="reverseLog"/>
+    </xsd:restriction>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:complexType name="DT_samplingName">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:token">
+        <xsd:attribute name="treeStepping" type="xsd:boolean" use="optional" default="false" />
+        <xsd:attribute name="maxTreeLevel" type="xsd:int" use="optional" default="10" />
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <!-- Data type for harmonic section, i.e. parameters required for
+       performing a harmonic analysis -->
+  <xsd:complexType name="DT_AnalysisHarmonic">
+    <xsd:complexContent>
+      <xsd:extension base="DT_AnalysisBasic">
+        <xsd:sequence>
+          <xsd:element name="numFreq" type="xsd:token" minOccurs="0" maxOccurs="1"/>
+          <xsd:element name="startFreq" type="xsd:token" minOccurs="0" maxOccurs="1"/>
+          <xsd:element name="stopFreq" type="xsd:token" minOccurs="0" maxOccurs="1"/>
+          <xsd:element name="sampling" minOccurs="0" maxOccurs="1" type="DT_sampling" default="linear"/>
+          <xsd:element name="frequencyList" minOccurs="0" maxOccurs="1">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="freq" maxOccurs="unbounded" minOccurs="1">
+                  <xsd:complexType>
+                    <xsd:attribute name="value" type="xsd:token" use="required"/>
+                    <xsd:attribute name="weight" type="xsd:token" default="1.0" use="optional"/>
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="writeRestart" type="DT_CFSBool" minOccurs="0" maxOccurs="1"/>
+          <xsd:element name="allowPostProc" type="DT_CFSBool" minOccurs="0" maxOccurs="1">
+          <xsd:annotation>
+            <xsd:documentation>Writes the solution of the algebraic system into the DataBase section of the HDF5 output. Needed e.g. for interploating results used as input in subsequent steps.</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  
+  <!-- ******************************************************************* -->
+  <!--   Definition of element AnalysisMultiHarmonic -->
+  <!-- ******************************************************************* -->
+  <xsd:element name="multiharmonic" type="DT_AnalysisMultiHarmonic" substitutionGroup="AnalysisBasic"/>
+  
+  <!-- Data type for multiharmonic section, i.e. parameters required for
+       performing a multiharmonic analysis -->
+  <xsd:complexType name="DT_AnalysisMultiHarmonic">
+    <xsd:complexContent>
+      <xsd:extension base="DT_AnalysisBasic">
+        <xsd:sequence>
+          <xsd:element name="baseFreq" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="numHarmonics_N" type="xsd:token" minOccurs="1" maxOccurs="1">
+            <xsd:annotation>
+              <xsd:documentation>
+                Number of harmonics taken into account for describing the solution quantity
+              </xsd:documentation>
+            </xsd:annotation>
+          </xsd:element>
+          <xsd:element name="numHarmonics_M" type="xsd:token" minOccurs="0" maxOccurs="1">
+            <xsd:annotation>
+              <xsd:documentation>
+                OPTIONAL, default is numHarmonics_M=numHarmonics_N
+                Number of harmonics taken into account for describing the nonlinear behaviour
+                of the system, e.g. nonlinear BH-curve in electromagnetics
+              </xsd:documentation>
+            </xsd:annotation>
+          </xsd:element>
+          <xsd:element name="numFFTPoints" type="xsd:token" minOccurs="1" maxOccurs="1">
+            <xsd:annotation>
+              <xsd:documentation>
+                Number of time points in one period of base-frequency.
+                NOTE: numFFTPoints is a scaling factor for numHarmonics_N,
+                the real number of considered time evaluation points, then is
+                      numFFTPoints * numHarmonics_N + 1
+                The FFT of the time-result into freq-result is based on this number of 
+                evaluation points. Also the other way round (transformation from
+                frequency- intotime-domain uses these number of steps).
+              </xsd:documentation>
+            </xsd:annotation>
+          </xsd:element>
+          <xsd:element name="fullSystem" type="xsd:boolean" minOccurs="1" maxOccurs="1" default="false">
+            <xsd:annotation>
+              <xsd:documentation>
+                If this is set true, then the full multiharmonic system is considered
+                with all harmonics (odd and even ones). Therewith we can also simulate
+                pre-loaded coils (DC component). The downside is a longer computational
+                time and memory consumption.
+              </xsd:documentation>
+            </xsd:annotation>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType> 
+  
+  
+  <!-- ******************************************************************* -->
+  <!--   Definition of element Buckling-->
+  <!-- ******************************************************************* -->
+  <xsd:element name="buckling" type="DT_Buckling" substitutionGroup="AnalysisBasic"/>
+  <!-- Data type for static analysis -->
+  <xsd:complexType name="DT_Buckling">
+    <xsd:complexContent>
+      <xsd:extension base="DT_AnalysisBasic">
+        <xsd:sequence>
+          <xsd:choice>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+              <xsd:element name="numModes"   type="xsd:integer"/>
+              <xsd:element name="valueShift" type="xsd:float" default="0.0"/>
+            </xsd:choice>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+              <xsd:element name="maxVal" type="xsd:float">
+                <xsd:annotation>
+                  <xsd:documentation>Imagining a circle on the complex plane with its center on the real axis, this value is its RIGHT intersection point with the real axis.</xsd:documentation>
+                </xsd:annotation> 
+              </xsd:element>
+              
+              <xsd:element name="minVal" type="xsd:float" default="0">
+                <xsd:annotation>
+                  <xsd:documentation>Imagining a circle on the complex plane with its center on the real axis, this value is its LEFT intersection point with the real axis.</xsd:documentation>
+                </xsd:annotation> 
+              </xsd:element>
+              
+            </xsd:choice>
+          </xsd:choice>
+          <xsd:element name="calcModes" minOccurs="0">
+            <xsd:complexType>
+              <xsd:attribute name="normalization" type="DT_ModeNormalization"/>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="inverse" type="DT_CFSBool" default="no"/>
+        <xsd:attribute name="stressFilter" type="xsd:double" default="-1"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+  
+  
+  <!-- ******************************************************************* -->
+  <!--   Definition of element eigenFrequency -->
+  <!-- ******************************************************************* -->
+  <xsd:element name="eigenFrequency" type="DT_AnalysisEigenFrequency"
+    substitutionGroup="AnalysisBasic"/>
+
+  <!-- Data type for performing an eigenfrequency analysis -->
+  <xsd:complexType name="DT_AnalysisEigenFrequency">
+    <xsd:complexContent>
+      <xsd:extension base="DT_AnalysisBasic">
+        <xsd:sequence>
+          <xsd:element name="isQuadratic" type="DT_CFSBool"/>
+          <xsd:choice>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+              <xsd:element name="numModes" type="xsd:token"/>
+              <xsd:element name="freqShift" type="DT_NonNegFloat"/>
+            </xsd:choice>
+            
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+              <xsd:element name="maxVal" type="xsd:token">   <xsd:annotation>
+                <xsd:documentation>Imagining a circle on the complex plane with its center on the real axis, this value is its RIGHT intersection point with the real axis.</xsd:documentation>
+              </xsd:annotation> 
+              </xsd:element>
+              
+              <xsd:element name="minVal" type="xsd:token" default="0">
+                <xsd:annotation>
+                  <xsd:documentation>Imagining a circle on the complex plane with its center on the real axis, this value is its LEFT intersection point with the real axis.</xsd:documentation>
+                </xsd:annotation> 
+              </xsd:element>
+              
+            </xsd:choice>
+            
+          </xsd:choice>
+          <xsd:element name="writeModes">
+            <xsd:complexType>
+              <xsd:simpleContent>
+                <xsd:extension base="DT_CFSBool">
+                  <xsd:attribute name="normalization" type="DT_ModeNormalization"/>
+                </xsd:extension>
+              </xsd:simpleContent>
+            </xsd:complexType>
+          </xsd:element>
+          <!-- bloch band gap visualization on the IBZ -->
+          <xsd:element name="bloch" minOccurs="0" maxOccurs="1">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="ibz" minOccurs="0" maxOccurs="1">
+                  <xsd:complexType>
+                    <xsd:attribute name="sample" use="required">
+                      <xsd:simpleType>
+                        <xsd:restriction base="xsd:token">
+                          <!-- This is a triangle in 2D and and tetrahedron in 3D. Note that this is only valid for symmetric designs! -->
+                          <xsd:enumeration value="symmetric"/>
+                          <!-- This is a (boundary! of a) rectangle in 3D (first quadrant) and a cube in 3D. Necessary for non-symmetric designs! -->
+                          <xsd:enumeration value="quadrant"/>
+                          <!-- This is just the horizontal part for 2D and 3D -->
+                          <xsd:enumeration value="horizontal"/>
+                          <!-- this regularly samples the first quadrant, has no practical meaning - just to verify the quadrant and triangle -->
+                          <xsd:enumeration value="full"/>
+                        </xsd:restriction>
+                      </xsd:simpleType>
+                    </xsd:attribute>
+                    <xsd:attribute name="steps" use="required" type="xsd:int"/>
+                  </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="waveVector" minOccurs="0" maxOccurs="unbounded">
+                  <xsd:complexType>
+                    <xsd:attribute name="x" type="xsd:float" use="required"/>
+                    <xsd:attribute name="y" type="xsd:float" use="required"/>
+                    <xsd:attribute name="z" type="xsd:float" use="optional" default="0.0"/>
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="allowPostProc" type="DT_CFSBool" minOccurs="0" maxOccurs="1">
+          <xsd:annotation>
+            <xsd:documentation>Writes the solution of the algebraic system into the DataBase section of the HDF5 output. Needed e.g. for interploating results used as input in subsequent steps.</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+        </xsd:sequence>
+        <!-- Arpack sometimes presents unsorted evs. 
+             By this option the evs are sorted by magnitude. For quadratic problems with real complex evs
+            this makes not sense. For bloch it is ok as the imaginary part is only spurious (Hermitian system)  -->
+        <xsd:attribute name="sort" use="optional" type="xsd:boolean" default="true"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+
+  <!-- ******************************************************************* -->
+  <!--   Definition of element InverseSource -->
+  <!-- ******************************************************************* -->
+  <xsd:element name="inverseSource" type="DT_AnalysisInverseSource"
+    substitutionGroup="AnalysisBasic"/>
+
+  <!-- Data type for harmonic section, i.e. parameters required for
+       performing a harmonic analysis -->
+  <xsd:complexType name="DT_AnalysisInverseSource">
+    <xsd:complexContent>
+      <xsd:extension base="DT_AnalysisBasic">
+        <xsd:sequence>
+          <xsd:element name="measDataFilename" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="freq" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="alphaPar" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="betaPar" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="rhoPar" type="xsd:token" minOccurs="0" maxOccurs="1"/>
+          <xsd:element name="expPar" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="resStopCritRel" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="maxReduceParSteps" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="maxGradSteps" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="maxNumLineSearch" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="minMicDistant" type="xsd:token" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="logLevel" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+          <xsd:element name="writeRestart" type="DT_CFSBool" minOccurs="0" maxOccurs="1"/>
+          <xsd:element name="allowPostProc" type="DT_CFSBool" minOccurs="0" maxOccurs="1">
+          <xsd:annotation>
+            <xsd:documentation>Writes the solution of the algebraic system into the DataBase section of the HDF5 output. Needed e.g. for interploating results used as input in subsequent steps.</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+          <xsd:element name="scale2Val" type="xsd:token" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+  
+  
+    <!-- ******************************************************************* -->
+  <!--   Definition of element EigenValue  -->
+  <!-- ******************************************************************* -->
+  <xsd:element name="eigenValue" type="DT_AnalysisEigenvalue" substitutionGroup="AnalysisBasic"/>
+  <!-- Data type for performing an eigenvalue analysis with selectable matrices -->
+  
+  <xsd:complexType name="DT_AnalysisEigenvalue">
+    <xsd:complexContent>
+      <xsd:extension base="DT_AnalysisBasic">
+        <xsd:sequence>
+        <xsd:choice minOccurs="1" maxOccurs="1">
+          <xsd:element name="solverDefined">
+            <xsd:annotation>
+              <xsd:documentation>
+        Use solver specific eigenvalue selection. Further specifications have to be made in the solver settings under the tag eigenValues.
+        Currently this option is only available for the FEAST eigensolver!
+              </xsd:documentation>
+            </xsd:annotation>
+          </xsd:element>
+	        <xsd:element name="inInterval">
+	        <xsd:annotation>
+              <xsd:documentation>
+				Computation of eigenvalues which are in the given interval
+              </xsd:documentation>
+            </xsd:annotation>
+	        	<xsd:complexType>
+	        		<xsd:attribute name = "max" type="xsd:float" use="required"/>
+	        		<xsd:attribute name = "min" type="xsd:float" use="required"/>
+	            </xsd:complexType>
+	        </xsd:element>
+     	    <xsd:element name="valuesAround">
+     	    <xsd:annotation>
+              <xsd:documentation>
+				Computation of eigenvalues which are around the given complex shiftpoint
+              </xsd:documentation>
+            </xsd:annotation>
+	        	<xsd:complexType>
+	        	<xsd:sequence>
+	        		<xsd:element name = "shiftPoint">
+	        			<xsd:complexType>
+	        				<xsd:sequence>
+	        					<xsd:element name = "Real" type = "xsd:float" minOccurs = "1">
+       						        <xsd:annotation>
+						              <xsd:documentation>
+										Real part of the complex valued shiftpoint
+						              </xsd:documentation>
+						            </xsd:annotation>
+	        					</xsd:element>
+	        					<xsd:element name = "Imag" type = "xsd:float" default = "0.0" minOccurs = "0">
+	        						<xsd:annotation>
+						              <xsd:documentation>
+										Imaginary part of the complex valued shiftpoint (optional default = 0)
+						              </xsd:documentation>
+						            </xsd:annotation>
+	        					</xsd:element>
+	        				</xsd:sequence>
+		        		</xsd:complexType>
+	        		</xsd:element>
+	        		<xsd:element name = "number" type="xsd:integer" minOccurs = "1">
+     		       		<xsd:annotation>
+		              		<xsd:documentation>
+								Number of Shiftpoints
+		              		</xsd:documentation>
+		            	</xsd:annotation>
+	        		</xsd:element>
+	        		</xsd:sequence>
+	            </xsd:complexType>
+	        </xsd:element>
+        </xsd:choice>
+          <xsd:element name="eigenVectors" minOccurs = "0" maxOccurs = "1">
+            <xsd:complexType>
+                  <xsd:attribute name="normalization" use="required">
+                   <xsd:simpleType>
+                     <xsd:restriction base="xsd:token">
+	                  <xsd:enumeration value="none"/>
+	                  <xsd:enumeration value="unit"/>
+	                  <xsd:enumeration value="norm"/>
+	                 </xsd:restriction>
+	                </xsd:simpleType>
+                  </xsd:attribute>
+                  <xsd:attribute name="side" use="required">
+                  <xsd:simpleType>
+                    <xsd:restriction base="xsd:token">
+	                  <xsd:enumeration value="left"/>
+	                  <xsd:enumeration value="right"/>
+	                </xsd:restriction>
+	                </xsd:simpleType>
+                  </xsd:attribute>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="allowPostProc" type="DT_CFSBool" minOccurs="0" maxOccurs="1">
+          <xsd:annotation>
+            <xsd:documentation>Writes the solution of the algebraic system into the DataBase section of the HDF5 output. Needed e.g. for interploating results used as input in subsequent steps.</xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
+          <xsd:element name="problemType" minOccurs = "1" maxOccurs = "1">
+          	<xsd:annotation>
+				<xsd:documentation>
+					Definition of the problemtype (standard EVP, generalized EVP, quadratic EVP)
+				</xsd:documentation>
+			</xsd:annotation>
+	        <xsd:complexType>
+	        <xsd:choice>
+	     	<xsd:element name="Standard"> <!-- Generalized EVP of the form A*x = lambda*B*x -->
+	       		<xsd:annotation>
+              		<xsd:documentation>
+						Standard EVP of form Matrix*x = lambda*B*x
+              		</xsd:documentation>
+             	</xsd:annotation>
+	           <xsd:complexType>
+	             <xsd:sequence>
+	               <xsd:element name="Matrix">
+	                    <xsd:simpleType>
+	                      <xsd:restriction base="xsd:token">
+	                        <!-- Use the massmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="mass"/>
+	                        <!--  Use the dampingmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="damping"/>
+	                        <!-- Use the stiffnessmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="stiffness"/>
+	                      </xsd:restriction>
+	                    </xsd:simpleType>
+	               </xsd:element>
+	            </xsd:sequence>
+	          </xsd:complexType>
+	         </xsd:element>
+	
+	     <xsd:element name="Generalized"> <!-- Generlalized EVP of the form A*x = lambda*B*x -->
+	     	    <xsd:annotation>
+              		<xsd:documentation>
+						Generlalized EVP of the form aMatrix*x = lambda*bMatrix*x
+              		</xsd:documentation>
+             	</xsd:annotation>
+	           <xsd:complexType>
+	             <xsd:sequence>
+	               <xsd:element name="aMatrix">
+	                    <xsd:simpleType>
+	                      <xsd:restriction base="xsd:token">
+	                        <!-- Use the massmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="mass"/>
+	                        <!--  Use the dampingmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="damping"/>
+	                        <!-- Use the stiffnessmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="stiffness"/>
+	                        </xsd:restriction>
+	                    </xsd:simpleType>
+	               </xsd:element>
+	               <xsd:element name="bMatrix">
+	                    <xsd:simpleType>
+	                      <xsd:restriction base="xsd:token">
+	                        <!-- Use the massmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="mass"/>
+	                        <!--  Use the dampingmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="damping"/>
+	                        <!-- Use the stiffnessmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="stiffness"/>
+	                        </xsd:restriction>
+	                    </xsd:simpleType>
+	               </xsd:element>
+	             </xsd:sequence>
+	           </xsd:complexType>
+	         </xsd:element>
+	        
+	     <xsd:element name="Quadratic"> <!-- Quadratic EVP of the form lamda²*A + lambda*B + C = 0 -->
+	     	    <xsd:annotation>
+              		<xsd:documentation>
+						Quadratic EVP of the form lamda²*A (quadratic matrix) + lambda*B (linear matrix) + C (constant matrix) = 0
+              		</xsd:documentation>
+             	</xsd:annotation>
+	          <xsd:complexType>
+	             <xsd:sequence>
+	               <xsd:element name="quadratic">
+	                    <xsd:simpleType>
+	                      <xsd:restriction base="xsd:token">
+	                        <!-- Use the massmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="mass"/>
+	                        <!--  Use the dampingmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="damping"/>
+	                        <!-- Use the stiffnessmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="stiffness"/>
+	                        </xsd:restriction>
+	                    </xsd:simpleType>
+	               </xsd:element>
+	               <xsd:element name="linear">
+	                    <xsd:simpleType>
+	                      <xsd:restriction base="xsd:token">
+	                        <!-- Use the massmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="mass"/>
+	                        <!--  Use the dampingmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="damping"/>
+	                        <!-- Use the stiffnessmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="stiffness"/>
+	                        </xsd:restriction>
+	                    </xsd:simpleType>
+	               </xsd:element>
+	               <xsd:element name="constant">
+	                    <xsd:simpleType>
+	                      <xsd:restriction base="xsd:token">
+	                        <!-- Use the massmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="mass"/>
+	                        <!--  Use the dampingmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="damping"/>
+	                        <!-- Use the stiffnessmatrix for eigenvalue analysis -->
+	                        <xsd:enumeration value="stiffness"/>
+	                        </xsd:restriction>
+	                    </xsd:simpleType>
+	               </xsd:element>
+	             </xsd:sequence>
+	           </xsd:complexType>
+	         </xsd:element>
+	          </xsd:choice>
+          	</xsd:complexType>
+          </xsd:element>
+      </xsd:sequence>
+        <!-- Arpack sometimes presents unsorted evs. 
+             By this option the evs are sorted by magnitude. For quadratic problems with real complex evs
+            this makes not sense. For bloch it is ok as the imaginary part is only spurious (Hermitian system)  -->
+        <xsd:attribute name="sort" use="optional" default="abs">
+          <xsd:simpleType>
+            <xsd:annotation>
+              <xsd:documentation>
+                Choose in what order complex-valued eigenvalues should be sorted. 
+                They can be sorted by increasing magnitude, real part or imaginary part.
+                Default is sorting by magnitude.
+              </xsd:documentation>
+            </xsd:annotation>
+            <xsd:restriction base="xsd:token">
+              <xsd:enumeration value="abs"/>
+              <xsd:enumeration value="real"/>
+              <xsd:enumeration value="imag"/>
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+</xsd:schema>
